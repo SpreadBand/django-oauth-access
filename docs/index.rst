@@ -6,10 +6,14 @@
 Welcome to django-oauth-access's documentation!
 ===============================================
 
-Contents:
+django-oauth-access provides support for authenticating users from most oauth 1.1 and 2.0 providers.  Below are guides for integrating with specific, commonly used providers.
+
+Provider Guides:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
+   
+   providers/facebook
 
 Indices and tables
 ==================
