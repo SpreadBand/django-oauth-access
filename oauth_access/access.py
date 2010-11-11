@@ -2,31 +2,30 @@ import cgi
 import datetime
 import httplib2
 import logging
-import socket
 import urllib
 import urlparse
 
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.sites.models import Site
 from django.core.exceptions import ImproperlyConfigured
 from django.core.urlresolvers import reverse
 from django.utils import simplejson as json
 
-from django.contrib.sites.models import Site
 
 import oauth2 as oauth
 
-from oauth_access.exceptions import NotAuthorized, MissingToken, \
-        ServiceFail, UnknownResponse
-from oauth_access.models import UserAssociation
-from oauth_access.utils.anyetree import etree
-from oauth_access.utils.loader import load_path_attr
+from .exceptions import NotAuthorized, MissingToken
+from .exceptions import ServiceFail, UnknownResponse
+from .models import OAuthAssociation
+from .utils.anyetree import etree
+from .utils.loader import load_path_attr
 
 
 logger = logging.getLogger("oauth_access.access")
 
 
 class OAuthAccess(object):
-    
     def __init__(self, service):
         self.service = service
         self.signature_method = oauth.SignatureMethod_HMAC_SHA1()
@@ -193,7 +192,7 @@ class OAuthAccess(object):
             request.sign_request(self.signature_method, self.consumer, token)
             return request.to_url()
     
-    def persist(self, user, token, identifier=None):
+    def persist(self, obj, token, identifier=None):
         expires = hasattr(token, "expires") and token.expires or None
         defaults = {
             "token": str(token),
@@ -201,8 +200,10 @@ class OAuthAccess(object):
         }
         if identifier is not None:
             defaults["identifier"] = identifier
-        assoc, created = UserAssociation.objects.get_or_create(
-            user = user,
+
+        assoc, created = OAuthAssociation.objects.get_or_create(
+            content_type = ContentType.objects.get_for_model(obj),
+            object_id = obj.pk,
             service = self.service,
             defaults = defaults,
         )
@@ -211,16 +212,15 @@ class OAuthAccess(object):
             assoc.expires = expires
             assoc.save()
     
-    def lookup_user(self, identifier):
-        queryset = UserAssociation.objects.all()
-        queryset = queryset.select_related("user")
+    def lookup_associated_object(self, identifier):
+        queryset = OAuthAssociation.objects.all()
         queryset = queryset.filter(service=self.service)
         try:
             assoc = queryset.get(identifier=identifier)
-        except UserAssociation.DoesNotExist:
+        except OAuthAssociation.DoesNotExist:
             return None
         else:
-            return assoc.user
+            return assoc.associated_object
     
     def make_api_call(self, kind, url, token, method="GET", **kwargs):
         if isinstance(token, OAuth20Token):
@@ -320,7 +320,6 @@ class Client(oauth.Client):
 
 
 class OAuth20Token(object):
-    
     def __init__(self, token, expires=None):
         self.token = token
         if expires is not None:

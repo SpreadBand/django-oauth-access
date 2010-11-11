@@ -6,8 +6,7 @@ from django.contrib.auth import login
 from django.contrib.auth.models import User
 
 
-class Callback(object):
-    
+class Callback(object):    
     def __call__(self, request, access, token):
         if not request.user.is_authenticated():
             authenticated = False
@@ -37,14 +36,13 @@ class Callback(object):
         raise NotImplementedError()
     
     def lookup_user(self, request, access, user_data):
-        return access.lookup_user(identifier=self.identifier_from_data(user_data))
+        return access.lookup_associated_object(identifier=self.identifier_from_data(user_data))
     
     def redirect_url(self, request):
         raise NotImplementedError()
 
 
 class AuthenticationCallback(Callback):
-    
     def handle_no_user(self, request, access, token, user_data):
         request.session["oauth_signup_data"] = {
             "token": token,

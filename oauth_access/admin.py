@@ -1,12 +1,12 @@
 from django.contrib import admin
-from oauth_access.models import UserAssociation
+from oauth_access.models import OAuthAssociation
 
 class UserAssociationAdmin(admin.ModelAdmin):
-    list_display = ('user','name','service','identifier','expires')
+    list_display = ('associated_object', 'name', 'service', 'identifier', 'expires')
     list_filter = ('service',)
-    search_fields = ['user__username','user__first_name','user__last_name','identifier']
+    search_fields = ['identifier']
     
     def name(self, obj):
-        return "%s %s" % (obj.user.first_name, obj.user.last_name)
+        return "%s %s" % (obj.associated_object, obj.service)
         
-admin.site.register(UserAssociation, UserAssociationAdmin)
+admin.site.register(OAuthAssociation, UserAssociationAdmin)

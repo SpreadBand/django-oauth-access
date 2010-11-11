@@ -7,7 +7,8 @@ from oauth_access.exceptions import MissingToken
 
 
 def oauth_login(request, service,
-        redirect_field_name="next", redirect_to_session_key="redirect_to"):
+                redirect_field_name="next", 
+                redirect_to_session_key="redirect_to"):
     access = OAuthAccess(service)
     if not service == "facebook":
         token = access.unauthorized_token()
@@ -32,7 +33,11 @@ def oauth_callback(request, service):
             return access.callback(request, access, auth_token)
         else:
             # @@@ not nice for OAuth 2
-            ctx.update({"error": "token_mismatch"})
+            error = request.GET.get("error")
+            error_description = request.GET.get("error_description")
+            ctx.update({"error": error,
+                        "error_description" : error_description})
+
     return render_to_response("oauth_access/oauth_error.html", ctx)
 
 

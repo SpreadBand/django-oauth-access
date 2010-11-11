@@ -1,6 +1,6 @@
 from django import template
 
-from oauth_access.models import UserAssociation
+from oauth_access.models import OAuthAssociation
 
 
 register = template.Library()
@@ -10,8 +10,8 @@ register = template.Library()
 def authed_via(user, service):
     if user.is_authenticated():
         try:
-            assoc = UserAssociation.objects.get(user=user, service=service)
-        except UserAssociation.DoesNotExist:
+            assoc = OAuthAssociation.objects.get(user=user, service=service)
+        except OAuthAssociation.DoesNotExist:
             return False
         return not assoc.expired()
     else:
