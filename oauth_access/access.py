@@ -15,21 +15,14 @@ from django.contrib.sites.models import Site
 
 import oauth2 as oauth
 
-from oauth_access.exceptions import NotAuthorized, MissingToken
+from oauth_access.exceptions import NotAuthorized, MissingToken, \
+        ServiceFail, UnknownResponse
 from oauth_access.models import UserAssociation
 from oauth_access.utils.anyetree import etree
 from oauth_access.utils.loader import load_path_attr
 
 
 logger = logging.getLogger("oauth_access.access")
-
-
-class UnknownResponse(Exception):
-    pass
-
-
-class ServiceFail(Exception):
-    pass
 
 
 class OAuthAccess(object):
@@ -63,7 +56,7 @@ class OAuthAccess(object):
     def provider_scope(self):
         try:
             return self._obtain_setting("endpoints", "provider_scope")
-        except KeyError:
+        except (KeyError, ImproperlyConfigured):
             return None
     
     def _obtain_setting(self, k1, k2):
@@ -93,6 +86,9 @@ class OAuthAccess(object):
         parameters = {
             "oauth_callback": self.callback_url,
         }
+        scope = self.provider_scope
+        if scope is not None:
+            parameters["scope"] = ",".join(scope)
         client = oauth.Client(self.consumer)
         response, content = client.request(self.request_token_url,
             method = "POST",
@@ -162,10 +158,13 @@ class OAuthAccess(object):
                     )
                 ).read()
                 response = cgi.parse_qs(raw_data)
-                return OAuth20Token(
-                    response["access_token"][-1],
-                    int(response["expires"][-1])
-                )
+                if "expires" in response:
+                    return OAuth20Token(
+                        response["access_token"][-1],
+                        int(response["expires"][-1])
+                    )
+                else:
+                    return OAuth20Token(response["access_token"][-1])
             else:
                 # @@@ this error case is not nice
                 return None

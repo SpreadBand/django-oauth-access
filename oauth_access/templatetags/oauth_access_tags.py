@@ -13,6 +13,6 @@ def authed_via(user, service):
             assoc = UserAssociation.objects.get(user=user, service=service)
         except UserAssociation.DoesNotExist:
             return False
-        return assoc.expired()
+        return not assoc.expired()
     else:
         return False
