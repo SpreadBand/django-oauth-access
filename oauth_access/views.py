@@ -7,8 +7,10 @@ from oauth_access.exceptions import MissingToken
 
 
 def oauth_login(request, service,
-                redirect_field_name="next", 
-                redirect_to_session_key="redirect_to"):
+                redirect_field_name='next',
+                redirect_to_session_key='redirect_to',
+                success_field_name='onsuccess',
+                success_session_key='oauth_success_url'):
     access = OAuthAccess(service)
     if not service == "facebook":
         token = access.unauthorized_token()
@@ -16,7 +18,9 @@ def oauth_login(request, service,
     else:
         token = None
     if hasattr(request, "session"):
+        request.session[success_session_key] = request.GET.get(success_field_name)
         request.session[redirect_to_session_key] = request.GET.get(redirect_field_name)
+
     return HttpResponseRedirect(access.authorization_url(token))
 
 
